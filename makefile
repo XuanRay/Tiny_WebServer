@@ -1,11 +1,11 @@
 CC = g++ -g
 
 
-server.out : main.o webServer.o task.o
+server.out : server.o webServer.o task.o
 	$(CC) -o server.out $^ -lpthread
 
-main.o : main.cpp webServer.h
-	$(CC) -o main.o -c main.cpp
+server.o : server.cpp webServer.h
+	$(CC) -o server.o -c server.cpp
 
 # webServer.a : webServer.o threadPool.o
 # 	ar cr libwebServer.a $^
@@ -20,4 +20,4 @@ task.o : task.cpp task.h
 .PHONY: clean
 
 clean:
-	rm *.o
+	rm *.o *.out

@@ -35,7 +35,7 @@ public:
 
 private:
     static void *worker( void * );  /* 工作线程 */
-    void runing();                     /* 线程池中线程开始运行的函数 */
+    void runing();                  /* 线程池中线程开始运行的函数 */
     T *getTask();                   /* 从任务队列中获取队首的任务 */
 };
 
@@ -81,10 +81,11 @@ ThreadPool<T>::ThreadPool( int thread_num ) :thread_number(thread_num), threads(
 // 由于 !m_stop 为 false，线程会退出循环，线程结束被回收（ 详见函数run() ）
 // 若不唤醒线程，则在程序退出后，线程会导致非正常结束
 template< typename T >
-ThreadPool<T>::~ThreadPool() {        // undo
+ThreadPool<T>::~ThreadPool() {
     delete[] threads;
     m_stop = true;
     queue_cond_locker.broadcast();
+    //delete[] threads;
 }
 
 
@@ -138,8 +139,8 @@ void ThreadPool<T>::runing() {
         if( !task ) {
             queue_cond_locker.wait();  // 队列为空，线程开始等待
         } else {
-            // printf("a thread start work\n");
-            task->doit();              // 开始执行任务
+            printf("a thread start work\n");
+            task->doit();              //开始执行任务
             delete task;               //task指向的对象在WebServer中new出来，因此需要手动delete
         }
     }

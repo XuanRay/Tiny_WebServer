@@ -17,12 +17,13 @@
 #include <netinet/in.h>
 #include <cstring>
 #include <unistd.h>
+#include <string>
 
 #include "task.h"
 
 using namespace std;
 
-const int max_event_num = 20;
+#define MAX_EVENT_NUM 100  /* epoll内核 可传出的最大事件个数 */
 
 class WebServer {
 private:

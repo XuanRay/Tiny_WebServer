@@ -63,8 +63,18 @@ void Task::doit() {
         if( !r ) { /* 对端正确关闭 */
             cout << " browser exit.\n";
             break;
-        } else if( r < 0 ) {  /* 如果接收出错则继续接收数据 */
-            continue;
+        } 
+        
+        // else if( r < 0 ) {  /* 如果接收出错则继续接收数据 */
+        //     continue;
+        // }
+
+        else if (r < 0) {       //非阻塞方式，ET 循环接受立即按届
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                reset_oneshot(epoll_fd, accp_fd);
+                printf("EAGAIN read later\n");
+                break;
+            }
         }
 
         int start = 0;
@@ -76,9 +86,9 @@ void Task::doit() {
             sscanf( tmp, "%d", &start );
         }
 
-        if( !strcmp( method, "GET" ) ) {  // 为GET
+        if( !strcmp( method, "GET" ) || !strcmp(method, "get") ) {  // 为GET
             deal_get( uri, start );
-        } else if( !strcmp( method, "POST" ) ) {  // 为POST
+        } else if( !strcmp( method, "POST" ) || !strcmp(method, "post")) {  // 为POST
             deal_post( uri, buf );
         } else {
             const char *header = "HTTP/1.1 501 Not Implemented\r\nContent-Type: text/plain;charset=utf-8\r\n\r\n";
@@ -86,8 +96,7 @@ void Task::doit() {
         }
         break;  /* 只要处理完就退出循环，避免浏览器一直处于pending状态 */ // undo
     }
-    // close( accp_fd );  // 任务完成直接close，不能在析构函数close(如果不delete task的话，undo
-                          // 不delete task不够条用析构函数)
+    // close( accp_fd ); 
 }
 
 
@@ -207,7 +216,7 @@ int Task::send_file( const string & filename, const char *type,
             // perror("sendfile : ");
             if( errno == EAGAIN ) {
                 printf("errno is EAGAIN\n");
-                // reset_oneshot( epoll_fd, accp_fd );
+                reset_oneshot( epoll_fd, accp_fd );
                 continue;
             } else {
                 perror( "sendfile " );

@@ -29,7 +29,7 @@ private:
 public:
     Task() {}
 
-    Task(int fd, int epoll) : accp_fd(fd), epoll_fd(epoll) {}
+    Task(int fd, int epoll_fd) : accp_fd(fd), epoll_fd(epoll_fd) {}
 
     ~Task() { removefd( epoll_fd, accp_fd ); }
 

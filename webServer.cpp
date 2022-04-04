@@ -69,7 +69,7 @@ int WebServer::runs() {
         return -1;        
     }
 
-    ThreadPool<Task> threadpool(50);  // 创建线程池，并运行
+    ThreadPool<Task> threadpool(50);  /* 创建线程池，并运行 */
 
     /* ThreadPool< Task > *threadpool;
     try {
@@ -79,33 +79,36 @@ int WebServer::runs() {
         return -1;
     } */
 
-    epoll_event events[max_event_num];
     epoll_fd = epoll_create(1024);
+
+    epoll_event events[MAX_EVENT_NUM];
 
     if( epoll_fd < 0 ) {
         cout << "epoll_create error, line: " << __LINE__ << endl;
         exit(-1);
     }
 
-
     epoll_event event;
     event.data.fd = sock_fd;
-    event.events = EPOLLIN | EPOLLRDHUP;
+    event.events = EPOLLIN | EPOLLRDHUP; /* EPOLLRDHUP 对端断开连接能检测到 */
     epoll_ctl( epoll_fd, EPOLL_CTL_ADD, sock_fd, &event );
-    // setnonblocking( sock_fd );
+    // setnonblocking( sock_fd );   监听的socket没有设置非阻塞
 
 
     while( true ) {
-        ret = epoll_wait( epoll_fd, events, max_event_num, -1 );
-        // printf("epoll_wait recv a connect %d\n", ret);
+        ret = epoll_wait( epoll_fd, events, MAX_EVENT_NUM, -1 );
+        
+        printf("epoll_wait recv a connect %d\n", ret);
+        
         if( ret < 0 ) {
-            perror( "epoll_wait:" );
+            perror( "epoll_wait: error" );
             return -1;
         }
+
         for( int i = 0; i < ret; i++ ) {
             int fd = events[i].data.fd;
 
-            if( fd == sock_fd ) {  /* 新连接 */
+            if( fd == sock_fd ) {  /* 检测到新连接 */
                 struct sockaddr_in client_addr;
                 socklen_t client_addr_size = sizeof( client_addr );
                 int conn_fd = accept( fd, (struct sockaddr *)&client_addr, &client_addr_size );
@@ -121,7 +124,8 @@ int WebServer::runs() {
 
             } else if( events[i].events & EPOLLIN ) {   //有数据写入
                 Task *task = new Task(fd, epoll_fd);    // 新建任务  delete在threadPool.cpp中的run方法中
-                threadpool.append( task );              // 添加任务
+                threadpool.append( task );              // 添加任务  
+                // 任务队列相对于用户来说是个消费者，也需要个条件变量控制是否满 UNDO
                 // printf("append a task, %d\n", fd);
                 
             } else {
@@ -129,6 +133,8 @@ int WebServer::runs() {
             }
         }
     }
+
+    close(epoll_fd);        //fd打开就记得需要关闭。
 
     return 0;
 }
